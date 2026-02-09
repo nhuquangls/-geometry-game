@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bé Nhận Biết Hình Khối 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f0f9ff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .game-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        /* 3D Styling for Shapes */
+        .shape-3d {
+            filter: drop-shadow(5px 10px 10px rgba(0,0,0,0.2));
+            cursor: grab;
+            transition: transform 0.2s ease;
+            user-select: none;
+        }
+
+        .shape-3d:active {
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+
+        /* Target Containers */
+        .target-zone {
+            border: 4px dashed #cbd5e1;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            transition: all 0.3s ease;
+            min-height: 220px;
+            text-align: center;
+        }
+
+        .target-zone.hover {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
+            transform: scale(1.05);
+        }
+
+        .target-zone.success {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        /* Object Illustrations (Icons/SVGs) */
+        .object-img {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 10px;
+        }
+
+        /* Animations */
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animate-bounce-slow {
+            animation: bounce 2s infinite;
+        }
+
+        /* Feedback UI */
+        #feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 100;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+
+        #feedback.show {
+            transform: translate(-50%, -50%) scale(1.5);
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <!-- Header -->
+    <div class="text-center mt-4">
+        <h1 class="text-4xl font-bold text-blue-600 drop-shadow-sm">BÉ HỌC HÌNH KHỐI</h1>
+        <p class="text-lg text-gray-600 mt-2">Kéo các hình ở dưới vào đồ vật tương ứng nhé!</p>
+    </div>
+
+    <!-- Target Zones (The Objects) -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
+        <!-- Đồng hồ (Circle) -->
+        <div class="target-zone" id="target-circle" data-shape="circle">
+            <svg class="object-img" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="#f8fafc" stroke="#64748b" stroke-width="3"/>
+                <circle cx="50" cy="50" r="40" fill="#fff" stroke="#94a3b8" stroke-width="1"/>
+                <line x1="50" y1="50" x2="50" y2="20" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+                <line x1="50" y1="50" x2="75" y2="50" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="50" cy="50" r="3" fill="#334155"/>
+            </svg>
+            <span class="font-bold text-gray-700">Đồng hồ</span>
+        </div>
+
+        <!-- Mái nhà (Triangle) -->
+        <div class="target-zone" id="target-triangle" data-shape="triangle">
+            <svg class="object-img" viewBox="0 0 100 100">
+                <path d="M50 10 L90 85 L10 85 Z" fill="#eab308" stroke="#854d0e" stroke-width="2"/>
+                <rect x="40" y="50" width="20" height="35" fill="#713f12" />
+            </svg>
+            <span class="font-bold text-gray-700">Mái nhà</span>
+        </div>
+
+        <!-- Bánh Chưng (Square) -->
+        <div class="target-zone" id="target-square" data-shape="square">
+            <svg class="object-img" viewBox="0 0 100 100">
+                <rect x="15" y="15" width="70" height="70" fill="#15803d" rx="4"/>
+                <line x1="15" y1="40" x2="85" y2="40" stroke="#f0fdf4" stroke-width="2"/>
+                <line x1="15" y1="60" x2="85" y2="60" stroke="#f0fdf4" stroke-width="2"/>
+                <line x1="40" y1="15" x2="40" y2="85" stroke="#f0fdf4" stroke-width="2"/>
+                <line x1="60" y1="15" x2="60" y2="85" stroke="#f0fdf4" stroke-width="2"/>
+            </svg>
+            <span class="font-bold text-gray-700">Bánh Chưng</span>
+        </div>
+
+        <!-- Tủ lạnh (Rectangle) -->
+        <div class="target-zone" id="target-rectangle" data-shape="rectangle">
+            <svg class="object-img" viewBox="0 0 100 100">
+                <rect x="25" y="10" width="50" height="80" fill="#94a3b8" rx="2"/>
+                <line x1="25" y1="45" x2="75" y2="45" stroke="#cbd5e1" stroke-width="2"/>
+                <rect x="65" y="25" width="4" height="15" fill="#334155" rx="1"/>
+                <rect x="65" y="55" width="4" height="20" fill="#334155" rx="1"/>
+            </svg>
+            <span class="font-bold text-gray-700">Tủ lạnh</span>
+        </div>
+    </div>
+
+    <!-- Draggable Shapes -->
+    <div class="flex justify-around items-center bg-white p-6 rounded-t-3xl shadow-lg border-t-4 border-blue-200 h-1/3">
+        
+        <!-- Hình Tròn (Đỏ) -->
+        <div class="shape-3d" id="shape-circle" draggable="true" data-shape="circle">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                    <radialGradient id="grad-circle" cx="40%" cy="40%" r="50%">
+                        <stop offset="0%" style="stop-color:#ff8888" />
+                        <stop offset="100%" style="stop-color:#cc0000" />
+                    </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="40" fill="url(#grad-circle)" />
+            </svg>
+        </div>
+
+        <!-- Hình Tam Giác -->
+        <div class="shape-3d" id="shape-triangle" draggable="true" data-shape="triangle">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="grad-tri" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#60a5fa" />
+                        <stop offset="100%" style="stop-color:#1e40af" />
+                    </linearGradient>
+                </defs>
+                <path d="M50 15 L85 80 L15 80 Z" fill="url(#grad-tri)" stroke-linejoin="round" />
+            </svg>
+        </div>
+
+        <!-- Hình Vuông -->
+        <div class="shape-3d" id="shape-square" draggable="true" data-shape="square">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+                <defs>
+                    <linearGradient id="grad-square" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#4ade80" />
+                        <stop offset="100%" style="stop-color:#166534" />
+                    </linearGradient>
+                </defs>
+                <rect x="15" y="15" width="70" height="70" fill="url(#grad-square)" rx="8" />
+            </svg>
+        </div>
+
+        <!-- Hình Chữ Nhật -->
+        <div class="shape-3d" id="shape-rectangle" draggable="true" data-shape="rectangle">
+            <svg width="120" height="80" viewBox="0 0 120 80">
+                <defs>
+                    <linearGradient id="grad-rect" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color:#f472b6" />
+                        <stop offset="100%" style="stop-color:#9d174d" />
+                    </linearGradient>
+                </defs>
+                <rect x="10" y="10" width="100" height="60" fill="url(#grad-rect)" rx="6" />
+            </svg>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Message -->
+<div id="feedback" class="text-6xl text-white font-bold pointer-events-none drop-shadow-lg">
+    <div id="feedback-content" class="bg-blue-500 rounded-full w-24 h-24 flex items-center justify-center">
+        ✅
+    </div>
+</div>
+
+<!-- Win Modal -->
+<div id="win-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[200]">
+    <div class="bg-white p-10 rounded-3xl text-center max-w-sm">
+        <h2 class="text-4xl font-bold text-green-600 mb-4">Tuyệt Vời!</h2>
+        <p class="text-xl text-gray-700 mb-6">Bé đã hoàn thành xuất sắc trò chơi rồi!</p>
+        <button onclick="location.reload()" class="bg-blue-600 text-white px-8 py-3 rounded-full font-bold hover:bg-blue-700 transition">
+            Chơi lại
+        </button>
+    </div>
+</div>
+
+<script>
+    const shapes = document.querySelectorAll('.shape-3d');
+    const targets = document.querySelectorAll('.target-zone');
+    const feedback = document.getElementById('feedback');
+    const feedbackContent = document.getElementById('feedback-content');
+    let completedCount = 0;
+
+    // Audio Context (Synthesized sounds because local files might not be available)
+    const playSound = (type) => {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        if (type === 'success') {
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+            oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2); // A5
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        } else if (type === 'fail') {
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(220, audioCtx.currentTime);
+            oscillator.frequency.linearRampToValueAtTime(110, audioCtx.currentTime + 0.2);
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.4);
+        } else if (type === 'win') {
+             // Happy chime
+             [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime + i * 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.1 + 0.5);
+                osc.start(audioCtx.currentTime + i * 0.1);
+                osc.stop(audioCtx.currentTime + i * 0.1 + 0.5);
+             });
+        }
+    };
+
+    // Drag and Drop Logic
+    shapes.forEach(shape => {
+        shape.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', shape.id);
+            shape.style.opacity = '0.5';
+        });
+
+        shape.addEventListener('dragend', () => {
+            shape.style.opacity = '1';
+        });
+
+        // Touch support
+        shape.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            shape.dataset.offsetX = touch.clientX - shape.getBoundingClientRect().left;
+            shape.dataset.offsetY = touch.clientY - shape.getBoundingClientRect().top;
+            shape.style.position = 'fixed';
+            shape.style.zIndex = '1000';
+        });
+
+        shape.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            shape.style.left = (touch.clientX - shape.dataset.offsetX) + 'px';
+            shape.style.top = (touch.clientY - shape.dataset.offsetY) + 'px';
+        });
+
+        shape.addEventListener('touchend', (e) => {
+            const touch = e.changedTouches[0];
+            shape.style.position = 'static';
+            shape.style.zIndex = 'auto';
+            
+            const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+            const dropZone = targetElement?.closest('.target-zone');
+            
+            if (dropZone) {
+                checkMatch(shape, dropZone);
+            }
+        });
+    });
+
+    targets.forEach(target => {
+        target.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            target.classList.add('hover');
+        });
+
+        target.addEventListener('dragleave', () => {
+            target.classList.remove('hover');
+        });
+
+        target.addEventListener('drop', (e) => {
+            e.preventDefault();
+            target.classList.remove('hover');
+            const shapeId = e.dataTransfer.getData('text/plain');
+            const shape = document.getElementById(shapeId);
+            checkMatch(shape, target);
+        });
+    });
+
+    function checkMatch(shape, target) {
+        if (shape.dataset.shape === target.dataset.shape) {
+            // Success
+            target.classList.add('success');
+            shape.style.visibility = 'hidden';
+            shape.setAttribute('draggable', 'false');
+            
+            feedbackContent.innerHTML = '✅';
+            feedbackContent.className = 'bg-green-500 rounded-full w-24 h-24 flex items-center justify-center';
+            showFeedback();
+            playSound('success');
+
+            completedCount++;
+            if (completedCount === 4) {
+                setTimeout(() => {
+                    playSound('win');
+                    document.getElementById('win-modal').classList.remove('hidden');
+                }, 800);
+            }
+        } else {
+            // Fail
+            feedbackContent.innerHTML = '❌';
+            feedbackContent.className = 'bg-red-500 rounded-full w-24 h-24 flex items-center justify-center';
+            showFeedback();
+            playSound('fail');
+            
+            // Shake target
+            target.classList.add('bg-red-100');
+            setTimeout(() => target.classList.remove('bg-red-100'), 500);
+        }
+    }
+
+    function showFeedback() {
+        feedback.classList.add('show');
+        setTimeout(() => feedback.classList.remove('show'), 800);
+    }
+
+</script>
+
+</body>
+</html>
